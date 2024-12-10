@@ -3,7 +3,7 @@
     "name": "testapp",
     "slug": "testapp",
     "version": "1.0.0",
-
+    "newArchEnabled": true,
     "scheme": "testapp",
     "web": {
       "bundler": "metro",
