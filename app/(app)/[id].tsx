@@ -1,10 +1,21 @@
-import { View, Text, TouchableOpacity, ScrollView, Share, Alert, Linking } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  Share,
+  Alert,
+  Linking,
+  Modal,
+  TextInput,
+} from 'react-native';
 import { useEffect, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '@/supabase/client';
 import { useAuth } from '@/contexts/auth';
 import { Ionicons } from '@expo/vector-icons';
-import { create } from 'zustand';
+
+const EXPO_PUBLIC_SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
 
 interface WishlistItem {
   id: number;
@@ -20,6 +31,12 @@ interface Wishlist {
   user_id: string;
 }
 
+interface NewItem {
+  name: string;
+  url: string;
+  description: string;
+}
+
 export default function WishlistDetailsPage() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
@@ -27,6 +44,12 @@ export default function WishlistDetailsPage() {
   const [wishlist, setWishlist] = useState<Wishlist | null>(null);
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [newItem, setNewItem] = useState<NewItem>({
+    name: '',
+    url: '',
+    description: '',
+  });
 
   useEffect(() => {
     console.log('DETAILS: ', id);
@@ -80,6 +103,19 @@ export default function WishlistDetailsPage() {
     }
   }
 
+  async function handleSharePublicLink() {
+    try {
+      const publicUrl = `${EXPO_PUBLIC_SUPABASE_URL}/functions/v1/list?id=${id}`;
+      await Share.share({
+        message: `Check out my wishlist: ${publicUrl}`,
+        url: publicUrl,
+      });
+    } catch (error) {
+      console.error('Error sharing public link:', error);
+      Alert.alert('Error', 'Failed to share public link');
+    }
+  }
+
   async function handleDeleteWishlist() {
     try {
       Alert.alert('Delete Wishlist', 'Are you sure you want to delete this wishlist?', [
@@ -118,6 +154,57 @@ export default function WishlistDetailsPage() {
     }
   }
 
+  async function handleAddItem() {
+    try {
+      if (!newItem.name.trim()) {
+        Alert.alert('Error', 'Item name is required');
+        return;
+      }
+
+      const { data, error } = await supabase.from('items').insert({
+        wishlist_id: Number(id),
+        name: newItem.name.trim(),
+        url: newItem.url.trim() || null,
+        description: newItem.description.trim() || null,
+      });
+
+      if (error) throw error;
+
+      // Refresh the items list
+      fetchWishlistDetails();
+      setIsModalVisible(false);
+      setNewItem({ name: '', url: '', description: '' });
+    } catch (error) {
+      console.error('Error adding item:', error);
+      Alert.alert('Error', 'Failed to add item');
+    }
+  }
+
+  async function handleDeleteItem(itemId: number) {
+    try {
+      Alert.alert('Delete Item', 'Are you sure you want to delete this item?', [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const { error } = await supabase.from('items').delete().eq('id', itemId);
+
+            if (error) throw error;
+            // Refresh the items list
+            fetchWishlistDetails();
+          },
+        },
+      ]);
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      Alert.alert('Error', 'Failed to delete item');
+    }
+  }
+
   if (loading) {
     return (
       <View className="flex-1 items-center justify-center">
@@ -146,14 +233,23 @@ export default function WishlistDetailsPage() {
 
         <View className="space-y-4">
           {items.map((item) => (
-            <View key={item.id} className="rounded-lg bg-white p-4 shadow-sm">
-              <Text className="text-lg font-semibold">{item.name}</Text>
-              {item.description && <Text className="mt-1 text-gray-600">{item.description}</Text>}
-              {item.url && (
-                <TouchableOpacity className="mt-2" onPress={() => handleOpenUrl(item.url!)}>
-                  <Text className="text-blue-500">{item.url}</Text>
+            <View key={item.id} className="mb-4 rounded-lg bg-white p-4 shadow-sm">
+              <View className="flex-row items-start justify-between">
+                <View className="flex-1">
+                  <Text className="text-lg font-semibold">{item.name}</Text>
+                  {item.description && (
+                    <Text className="mt-1 text-gray-600">{item.description}</Text>
+                  )}
+                  {item.url && (
+                    <TouchableOpacity className="mt-2" onPress={() => handleOpenUrl(item.url!)}>
+                      <Text className="text-blue-500">{item.url}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                <TouchableOpacity className="p-2" onPress={() => handleDeleteItem(item.id)}>
+                  <Ionicons name="trash-outline" size={20} color="#EF4444" />
                 </TouchableOpacity>
-              )}
+              </View>
             </View>
           ))}
 
@@ -163,11 +259,23 @@ export default function WishlistDetailsPage() {
         </View>
       </ScrollView>
 
-      <View className="absolute bottom-8 right-8 flex-row space-x-4">
+      <View className="absolute bottom-8 right-8 flex-row gap-2">
         <TouchableOpacity
           className="h-14 w-14 items-center justify-center rounded-full bg-red-500 shadow-lg"
           onPress={handleDeleteWishlist}>
           <Ionicons name="trash-outline" size={24} color="white" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          className="h-14 w-14 items-center justify-center rounded-full bg-green-500 shadow-lg"
+          onPress={() => setIsModalVisible(true)}>
+          <Ionicons name="add-outline" size={24} color="white" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          className="h-14 w-14 items-center justify-center rounded-full bg-purple-500 shadow-lg"
+          onPress={handleSharePublicLink}>
+          <Ionicons name="globe-outline" size={24} color="white" />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -176,6 +284,51 @@ export default function WishlistDetailsPage() {
           <Ionicons name="share-outline" size={24} color="white" />
         </TouchableOpacity>
       </View>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isModalVisible}
+        onRequestClose={() => setIsModalVisible(false)}>
+        <View className="flex-1 justify-end">
+          <View className="rounded-t-3xl bg-white p-4 shadow-lg">
+            <View className="mb-4 flex-row items-center justify-between">
+              <Text className="text-xl font-bold">Add New Item</Text>
+              <TouchableOpacity onPress={() => setIsModalVisible(false)}>
+                <Ionicons name="close-outline" size={24} color="black" />
+              </TouchableOpacity>
+            </View>
+
+            <TextInput
+              className="mb-4 rounded-lg bg-gray-100 p-3"
+              placeholder="Item name *"
+              value={newItem.name}
+              onChangeText={(text) => setNewItem((prev) => ({ ...prev, name: text }))}
+            />
+
+            <TextInput
+              className="mb-4 rounded-lg bg-gray-100 p-3"
+              placeholder="URL (optional)"
+              value={newItem.url}
+              onChangeText={(text) => setNewItem((prev) => ({ ...prev, url: text }))}
+              keyboardType="url"
+            />
+
+            <TextInput
+              className="mb-4 rounded-lg bg-gray-100 p-3"
+              placeholder="Description (optional)"
+              value={newItem.description}
+              onChangeText={(text) => setNewItem((prev) => ({ ...prev, description: text }))}
+              multiline
+              numberOfLines={3}
+            />
+
+            <TouchableOpacity className="rounded-lg bg-blue-500 p-4" onPress={handleAddItem}>
+              <Text className="text-center font-semibold text-white">Add Item</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

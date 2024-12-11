@@ -1,6 +1,9 @@
 import { Redirect, Stack } from 'expo-router';
 import { useAuth } from '@/contexts/auth';
 import LoadingScreen from '@/components/LoadingScreen';
+import { TouchableOpacity, Text } from 'react-native';
+import { Link } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function AppLayout() {
   const { session, isLoading } = useAuth();
@@ -27,6 +30,13 @@ export default function AppLayout() {
         name="index"
         options={{
           title: 'My Wishlists',
+          headerRight: () => (
+            <Link href="/(app)/settings" asChild>
+              <TouchableOpacity className="">
+                <Ionicons name="settings-outline" size={24} color="#4b5563" />
+              </TouchableOpacity>
+            </Link>
+          ),
         }}
       />
       <Stack.Screen

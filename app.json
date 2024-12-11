@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "testapp",
-    "slug": "testapp",
+    "name": "SupaWishlist",
+    "slug": "supawishlist",
     "version": "1.0.0",
     "newArchEnabled": true,
-    "scheme": "testapp",
+    "scheme": "supawishlist",
     "web": {
       "bundler": "metro",
       "output": "static",
@@ -13,15 +13,11 @@
     "plugins": ["expo-router"],
     "experiments": {
       "typedRoutes": true,
-
       "tsconfigPaths": true
     },
-
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-
     "userInterfaceStyle": "light",
-
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -29,12 +25,22 @@
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.supersimon.testapp"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
+      },
+      "package": "com.supersimon.testapp"
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": ""
       }
     }
   }

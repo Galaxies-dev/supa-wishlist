@@ -23,3 +23,10 @@ android
 
 # Temporary files created by Metro to check the health of the file watcher
 .metro-health-check*
+# Local Netlify folder
+.netlify
+
+ios/
+android/
+
+.env.prod

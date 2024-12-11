@@ -83,7 +83,7 @@ export default function SignupPage() {
           </Text>
         </TouchableOpacity>
 
-        <View className="flex-row justify-center space-x-1">
+        <View className="flex-row justify-center space-x-1 pt-2">
           <Text className="text-gray-600">Already have an account?</Text>
           <Link href="/login" className="text-blue-500">
             Log in
