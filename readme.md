@@ -1,4 +1,4 @@
-# Project Name
+# SupaWishlist
 
 A mobile application built with Expo, React Native, and Supabase.
 
